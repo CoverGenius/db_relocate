@@ -1,0 +1,15 @@
+aws:
+  profile: "my-profile-name"
+  region: "us-west-1"
+src:
+  user: "my_user"
+  password: "super_secret"
+  schema: "public"
+  name: "testabc"
+  port: "5432"
+  host: "poc.id.us-west-1.rds.amazonaws.com"
+  instance_id: "poc"
+upgrade:
+  engine_version: "13.7"
+  parameter_group: "poc-upgrade-13"
+  password: "upgrade_user_password"
