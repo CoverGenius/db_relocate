@@ -5,28 +5,25 @@ The purpose of this tool is to simplify and automate database migration or upgra
 ## How to run
 `./db_relocate run`
 
-## What this tool exactly does?
-1. Run pre-flight checks
-2. Starts background healthcheck process.
-3. Create publication + replication slot.
-4. Take snapshot of the source dataase.
-5. Upgrade snapshot to the desired engine version.(Applying encryption if none)
-6. Restore new daatabase instance from a snapshot.
-7. Create subscription on the destination database
-8. Advance replication to the correct LSN at the moment when snapshot was taken.
-9. Sync the data which was changed after snapshot was taken.
+## What exactly does this tool do?
+1. Run pre-flight checks.
+2. Start background health check process.
+3. Create publication and replication slot.
+4. Take a snapshot of the source database.
+5. Upgrade the snapshot to the desired engine version (apply encryption if none).
+6. Restore a new database instance from the snapshot.
+7. Create a subscription on the destination database.
+8. Advance replication to the correct LSN at the moment when the snapshot was taken.
+9. Sync the data that was changed after the snapshot was taken.
 10. Verify that all the heartbeat records have been synced.
-11. Update sequences by leaving a small gap in order to avoid any conflicts.
+11. Update sequences by leaving a small gap to avoid any conflicts.
 
-After all the step above have been processed you will have 2 RDS postgres databases fully synced without any data loss.
-It is also your responsibility to double check that all the data has been synced after snapshot has been taken.
-Healthcheck process will help you to be more confident.
+After all the above steps have been processed, you will have two RDS PostgreSQL databases fully synced without any data loss. It is also your responsibility to double-check that all the data has been synced after the snapshot has been taken. The health check process will help you to be more confident.
 
-TODO: will be automated soon as well.
-As a final step you need to deploy some load balancer(e.g: haproxy), point your application to it and then switch the traffic straight away.
-And then you just need to do a cleanup and point your app directly to the new database.
+TODO: It will be automated soon as well.
+As a final step, you need to deploy a load balancer (e.g., HAProxy), point your application to it, and then switch the traffic straight away. Then, you need to do a cleanup and point your app directly to the new database.
 
-All procedure runs about an hour.
+The entire procedure takes about an hour to run.
 
 ## Configuration
 
@@ -108,6 +105,6 @@ Name                | Description
 ## Future plans
 Time            |   Goal
 ----------------|-------
-`short-term`    | 1. Increase test coverage. 2. Provision load balancer in the end automatically.
+`short-term`    | 1. Increase test coverage. 2. Provision load balancer in the end automatically. 3. Spin-up read replicas(if any).
 `mid-term`      | 1. Add MySQL as well. 2. Add google cloud resources potentially.
 `long-term`     | 1. Create a kubernetes operator which will perform upgrade/migration routine completely automatically without downtime.
