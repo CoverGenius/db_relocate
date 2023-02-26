@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	COOLDOWN_PERIOD time.Duration = 1 // minutes
+	COOLDOWN_PERIOD time.Duration = 5 // minutes
 )
 
 func (c *Controller) Run() error {
@@ -26,7 +26,7 @@ func (c *Controller) Run() error {
 		return err
 	}
 
-	err = c.EnsureParametersOnSrcDB(instance)
+	err = c.ensureParametersOnSrcDB(instance)
 	if err != nil {
 		return err
 	}
@@ -53,7 +53,7 @@ func (c *Controller) Run() error {
 		return err
 	}
 
-	err = c.EnsureParametersOnDstDB(newInstance)
+	err = c.ensureParametersOnDstDB(newInstance)
 	if err != nil {
 		return err
 	}
@@ -86,11 +86,12 @@ func (c *Controller) Run() error {
 		return err
 	}
 
-	log.Infoln("Operation successfully finished. Dont forget to perform cleanup operations:")
-	log.Infoln("1. Delete subscription")
-	log.Infoln("2. Stop old DB instance.")
-	log.Infoln("3. Delete upgrade user.")
-	log.Infoln("4. Drop heartbeat table.")
+	err = c.performCleanup(instance)
+	if err != nil {
+		return err
+	}
+
+	log.Infoln("Success!")
 
 	return nil
 }

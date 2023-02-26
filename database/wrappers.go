@@ -60,6 +60,14 @@ func (c *Controller) writeTransaction(connection *sqlx.DB, statement *string, ar
 	return nil
 }
 
+func (c *Controller) simpleWriteTransaction(connection *sqlx.DB, statement *string, args ...interface{}) error {
+	query := c.buildQuery(statement, args...)
+
+	_, err := connection.Exec(*query)
+
+	return err
+}
+
 func (c *Controller) getContainerLength(container interface{}) int {
 	switch t := container.(type) {
 	case *[]int64:
@@ -75,6 +83,8 @@ func (c *Controller) getContainerLength(container interface{}) int {
 	case *[]tablePrivilege:
 		return len(*t)
 	case *[]table:
+		return len(*t)
+	case *[]subscription:
 		return len(*t)
 	default:
 		return 0
@@ -102,7 +112,8 @@ func (c *Controller) PrepareSrcDatabaseForUpgrade() error {
 		return err
 	}
 
-	err = c.ensurePublication()
+	publicationName := PUBLICATION_NAME
+	err = c.ensurePublication(&publicationName)
 	if err != nil {
 		return err
 	}

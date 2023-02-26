@@ -47,6 +47,14 @@ type publication struct {
 	Delete    string `db:"delete"`
 }
 
+type subscription struct {
+	ID      string `db:"id"`
+	Name    string `db:"name"`
+	Owner   string `db:"owner"`
+	Enabled string `db:"enabled"`
+	Slot    string `db:"slot"`
+}
+
 type replicationSlot struct {
 	Name     string `db:"name"`
 	Plugin   string `db:"plugin"`

@@ -20,7 +20,7 @@ import (
 
 const (
 	HEALTHCHECK_TABLE_NAME string        = "healthcheck_heartbeats"
-	HEALTHCHECK_INTERVAL   time.Duration = 10 // seconds
+	HEALTHCHECK_INTERVAL   time.Duration = 1 // seconds
 )
 
 func (c *Controller) fetchHeartBeatRecords() ([]int64, error) {
@@ -84,7 +84,7 @@ func (c *Controller) BeginHealthCheckProcess(heartBeatRecords *[]int64) (*time.T
 
 	healthCheckTableName := HEALTHCHECK_TABLE_NAME
 
-	exists, err := c.tableExists(&healthCheckTableName)
+	exists, err := c.tableExists(c.srcDatabaseConnection, &healthCheckTableName)
 	if err != nil {
 		c.errorChannel <- errors.New(fmt.Sprintf(
 			"Failed to perform a health check table lookup: '%s'. Received an error: '%s'",
@@ -130,4 +130,34 @@ func (c *Controller) BeginHealthCheckProcess(heartBeatRecords *[]int64) (*time.T
 	}()
 
 	return healthCheckProcessTicker, healthCheckCompletionChannel
+}
+
+func (c *Controller) DropHealthCheckTable() error {
+	log.Infoln("Deleting the healthcheck table that was used during the upgrade/migration process.")
+	healthCheckTableName := HEALTHCHECK_TABLE_NAME
+	existsOnSrc, err := c.tableExists(c.srcDatabaseConnection, &healthCheckTableName)
+	if err != nil {
+		return err
+	}
+
+	if existsOnSrc {
+		err = c.dropTable(c.srcDatabaseConnection, &healthCheckTableName)
+		if err != nil {
+			return err
+		}
+	}
+
+	existsOnDst, err := c.tableExists(c.dstDatabaseConnection, &healthCheckTableName)
+	if err != nil {
+		return err
+	}
+
+	if existsOnDst {
+		err = c.dropTable(c.dstDatabaseConnection, &healthCheckTableName)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

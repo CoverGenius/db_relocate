@@ -15,6 +15,8 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/jmoiron/sqlx"
 )
 
 func (c *Controller) addLoginOption(user *user) error {
@@ -45,7 +47,7 @@ func (c *Controller) ensureCanLogin(user *user) error {
 	return nil
 }
 
-func (c *Controller) getUserByName(username *string, u *user) (bool, error) {
+func (c *Controller) getUserAndRoles(username *string, u *user) (bool, error) {
 	// TODO: handle row level security policy if any.
 	users := []user{}
 	statement := `
@@ -80,10 +82,52 @@ func (c *Controller) getUserByName(username *string, u *user) (bool, error) {
 	return true, nil
 }
 
+func (c *Controller) userExists(connection *sqlx.DB, username *string) (bool, error) {
+	users := []string{}
+
+	statement := `SELECT rolname FROM pg_catalog.pg_roles WHERE rolname='%s';`
+
+	exists, err := c.readTransaction(&users, connection, &statement, *username)
+
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
+}
+
+func (c *Controller) revokeAllPrivileges(connection *sqlx.DB, username *string, schema *string, database *string) error {
+	statement := `REVOKE ALL ON DATABASE %s FROM %s;`
+
+	err := c.writeTransaction(connection, &statement, *database, *username)
+	if err != nil {
+		return err
+	}
+
+	statement = `REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA %s FROM %s;`
+
+	err = c.writeTransaction(connection, &statement, *schema, *username)
+
+	return err
+}
+
+func (c *Controller) dropUser(connection *sqlx.DB, username *string, schema *string, database *string) error {
+	err := c.revokeAllPrivileges(connection, username, schema, database)
+	if err != nil {
+		return err
+	}
+
+	statement := `DROP USER %s;`
+
+	err = c.writeTransaction(connection, &statement, *username)
+
+	return err
+}
+
 func (c *Controller) CurrentUserCanProceed() (bool, error) {
 	user := user{}
 
-	found, err := c.getUserByName(&c.configuration.Items.Src.User, &user)
+	found, err := c.getUserAndRoles(&c.configuration.Items.Src.User, &user)
 	if err != nil {
 		return false, err
 	}
@@ -143,7 +187,7 @@ func (c *Controller) ensureUpgradeUser() error {
 }
 
 func (c *Controller) createRoleWithLogin(username *string, password *string, u *user) error {
-	statement := `CREATE ROLE %s WITH LOGIN PASSWORD %s;`
+	statement := `CREATE ROLE %s WITH LOGIN PASSWORD '%s';`
 
 	err := c.writeTransaction(c.srcDatabaseConnection, &statement, *username, *password)
 
@@ -151,7 +195,7 @@ func (c *Controller) createRoleWithLogin(username *string, password *string, u *
 		return err
 	}
 
-	found, err := c.getUserByName(username, u)
+	found, err := c.getUserAndRoles(username, u)
 	if err != nil {
 		return err
 	}
@@ -168,7 +212,7 @@ func (c *Controller) createRoleWithLogin(username *string, password *string, u *
 
 func (c *Controller) ensureUser(username *string, password *string) (*user, error) {
 	user := user{}
-	found, err := c.getUserByName(username, &user)
+	found, err := c.getUserAndRoles(username, &user)
 	if err != nil {
 		return nil, err
 	}
@@ -193,4 +237,44 @@ func (c *Controller) ensureUser(username *string, password *string) (*user, erro
 	user.memberOfStringToMemberOfList()
 
 	return &user, nil
+}
+
+func (c *Controller) DeleteUpgradeUser() error {
+	log.Infoln("Deleting the upgrade user that was used during the upgrade/migration process.")
+
+	existsOnSrc, err := c.userExists(c.srcDatabaseConnection, &c.configuration.Items.Upgrade.User)
+	if err != nil {
+		return err
+	}
+
+	if existsOnSrc {
+		err = c.dropUser(
+			c.srcDatabaseConnection,
+			&c.configuration.Items.Upgrade.User,
+			&c.configuration.Items.Src.Schema,
+			&c.configuration.Items.Src.Name,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	existsOnDst, err := c.userExists(c.dstDatabaseConnection, &c.configuration.Items.Upgrade.User)
+	if err != nil {
+		return err
+	}
+
+	if existsOnDst {
+		err = c.dropUser(
+			c.dstDatabaseConnection,
+			&c.configuration.Items.Upgrade.User,
+			&c.configuration.Items.Src.Schema,
+			&c.configuration.Items.Src.Name,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

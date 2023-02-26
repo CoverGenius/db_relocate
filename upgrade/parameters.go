@@ -16,7 +16,7 @@ import (
 	rdsTypes "github.com/aws/aws-sdk-go-v2/service/rds/types"
 )
 
-func (c *Controller) EnsureParametersOnSrcDB(instance *rdsTypes.DBInstance) error {
+func (c *Controller) ensureParametersOnSrcDB(instance *rdsTypes.DBInstance) error {
 	requiredParametersOnSrcDBInstance := map[string]*rdsTypes.Parameter{
 		"rds.logical_replication": {
 			ParameterName:  a.String("rds.logical_replication"),
@@ -34,7 +34,7 @@ func (c *Controller) EnsureParametersOnSrcDB(instance *rdsTypes.DBInstance) erro
 	return err
 }
 
-func (c *Controller) EnsureParametersOnDstDB(instance *rdsTypes.DBInstance) error {
+func (c *Controller) ensureParametersOnDstDB(instance *rdsTypes.DBInstance) error {
 	requiredParametersOnDstDBInstance := map[string]*rdsTypes.Parameter{
 		"track_commit_timestamp": {
 			ParameterName:  a.String("track_commit_timestamp"),

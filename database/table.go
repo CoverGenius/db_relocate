@@ -10,7 +10,11 @@
 
 package database
 
-func (c *Controller) tableExists(tableName *string) (bool, error) {
+import (
+	"github.com/jmoiron/sqlx"
+)
+
+func (c *Controller) tableExists(connection *sqlx.DB, tableName *string) (bool, error) {
 	tables := []table{}
 	statement := `
 	SELECT
@@ -30,7 +34,7 @@ func (c *Controller) tableExists(tableName *string) (bool, error) {
 
 	exists, err := c.readTransaction(
 		&tables,
-		c.srcDatabaseConnection,
+		connection,
 		&statement,
 		c.configuration.Items.Src.Name,
 		c.configuration.Items.Src.Schema,
@@ -55,6 +59,14 @@ func (c *Controller) truncateTable(table *string) error {
 	statement := `TRUNCATE TABLE %s;`
 
 	err := c.writeTransaction(c.srcDatabaseConnection, &statement, *table)
+
+	return err
+}
+
+func (c *Controller) dropTable(connection *sqlx.DB, table *string) error {
+	statement := `DROP TABLE %s;`
+
+	err := c.writeTransaction(connection, &statement, *table)
 
 	return err
 }
