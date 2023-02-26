@@ -188,6 +188,16 @@ func TestGetContainerLength(t *testing.T) {
 			expected:  0,
 		},
 		{
+			name:      "Non empty subscription slice",
+			container: &[]subscription{{Name: "abc"}, {Name: "xyz"}},
+			expected:  2,
+		},
+		{
+			name:      "Empty subscription slice",
+			container: &[]subscription{},
+			expected:  0,
+		},
+		{
 			name:      "Unmatched non-empty container",
 			container: &[]float64{1.10, 2.0, 3},
 			expected:  0,

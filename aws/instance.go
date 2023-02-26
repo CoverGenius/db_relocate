@@ -190,3 +190,12 @@ func (c *Controller) IsValidStorageType(instance *rdsTypes.DBInstance) (bool, er
 
 	return false, nil
 }
+
+func (c *Controller) StopSrcDBInstance(instance *rdsTypes.DBInstance) error {
+	input := &rds.StopDBInstanceInput{
+		DBInstanceIdentifier: instance.DBInstanceIdentifier,
+	}
+	_, err := c.rdsClient.StopDBInstance(*c.configuration.Context, input)
+
+	return err
+}

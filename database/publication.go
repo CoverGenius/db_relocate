@@ -10,28 +10,30 @@
 
 package database
 
+import "db_relocate/log"
+
 const (
 	PUBLICATION_NAME string = "upgrade"
 )
 
-func (c *Controller) createPublication() error {
+func (c *Controller) createPublication(publicationName *string) error {
 	statement := `
 	CREATE publication %s
 	FOR ALL TABLES;`
 
-	err := c.writeTransaction(c.srcDatabaseConnection, &statement, PUBLICATION_NAME)
+	err := c.writeTransaction(c.srcDatabaseConnection, &statement, *publicationName)
 
 	return err
 }
 
-func (c *Controller) dropPublication() error {
+func (c *Controller) dropPublication(publicationName *string) error {
 	statement := `DROP publication %s;`
-	err := c.writeTransaction(c.srcDatabaseConnection, &statement, PUBLICATION_NAME)
+	err := c.writeTransaction(c.srcDatabaseConnection, &statement, *publicationName)
 
 	return err
 }
 
-func (c *Controller) publicationExists() (bool, error) {
+func (c *Controller) publicationExists(publicationName *string) (bool, error) {
 	publications := []publication{}
 
 	statement := `
@@ -45,26 +47,45 @@ func (c *Controller) publicationExists() (bool, error) {
 	FROM pg_catalog.pg_publication AS p
 	WHERE p.pubname = '%s';`
 
-	exists, err := c.readTransaction(&publications, c.srcDatabaseConnection, &statement, PUBLICATION_NAME)
+	exists, err := c.readTransaction(&publications, c.srcDatabaseConnection, &statement, *publicationName)
 
 	return exists, err
 }
 
-func (c *Controller) ensurePublication() error {
-	exists, err := c.publicationExists()
+func (c *Controller) ensurePublication(publicationName *string) error {
+	exists, err := c.publicationExists(publicationName)
 	if err != nil {
 		return err
 	}
 
 	// TODO: add force flag logic
 	if exists {
-		err = c.dropPublication()
+		err = c.dropPublication(publicationName)
 		if err != nil {
 			return err
 		}
 	}
 
-	err = c.createPublication()
+	err = c.createPublication(publicationName)
 
 	return err
+}
+
+func (c *Controller) DropUpgradePublication() error {
+	log.Infoln("Deleting the upgrade publication that was used during the upgrade/migration process.")
+
+	publicationName := PUBLICATION_NAME
+	exists, err := c.publicationExists(&publicationName)
+	if err != nil {
+		return err
+	}
+
+	if exists {
+		err = c.dropPublication(&publicationName)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

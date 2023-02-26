@@ -13,6 +13,8 @@ package database
 import (
 	"errors"
 	"fmt"
+
+	"db_relocate/log"
 )
 
 const (
@@ -68,6 +70,53 @@ func (c *Controller) getSubscriptionID() (*string, error) {
 	}
 
 	return &subscriptionIDs[0], nil
+}
+
+func (c *Controller) subscriptionExists(subscriptionName *string) (bool, error) {
+	subscriptions := []subscription{}
+
+	statement := `
+	SELECT
+		subdbid AS id,
+		subname AS name,
+		subowner AS owner,
+		subenabled AS enabled,
+		subslotname AS slot
+	FROM pg_catalog.pg_subscription
+	WHERE subname='%s';`
+
+	exists, err := c.readTransaction(&subscriptions, c.dstDatabaseConnection, &statement, *subscriptionName)
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
+}
+
+func (c *Controller) dropSubscription(subscriptionName *string) error {
+	statement := `DROP subscription %s;`
+
+	err := c.simpleWriteTransaction(c.dstDatabaseConnection, &statement, *subscriptionName)
+
+	return err
+}
+
+func (c *Controller) DeleteUpgradeSubscription() error {
+	log.Infoln("Deleting the subscription that was used during the upgrade/migration process.")
+	subscriptionName := SUBSCRIPTION_NAME
+	exists, err := c.subscriptionExists(&subscriptionName)
+	if err != nil {
+		return err
+	}
+
+	if exists {
+		err = c.dropSubscription(&subscriptionName)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (c *Controller) ensureSubscription() (*string, error) {

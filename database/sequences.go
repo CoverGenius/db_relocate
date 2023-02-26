@@ -14,6 +14,8 @@ import (
 	"errors"
 	"fmt"
 
+	"db_relocate/log"
+
 	"golang.org/x/sync/errgroup"
 )
 
@@ -59,6 +61,8 @@ func (c *Controller) updateSequence(statement *string) error {
 }
 
 func (c *Controller) IncrementSequenceValues() error {
+	log.Infoln("Incrementing sequence values by leaving a small gap in order to avoid conflicts.")
+
 	statement, err := c.prepareSelectSequenceStatement()
 	if err != nil {
 		return err
