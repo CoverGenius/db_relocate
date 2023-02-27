@@ -10,10 +10,15 @@
 
 package database
 
-import "db_relocate/log"
+import (
+	"db_relocate/log"
+	"strconv"
+	"time"
+)
 
 const (
-	REPLICATION_SLOT_NAME string = "upgrade"
+	REPLICATION_SLOT_NAME   string        = "upgrade"
+	WAIT_UNTIL_SYNC_TIMEOUT time.Duration = 60 // minutes
 )
 
 func (c *Controller) createLogicalReplicationSlot() error {
@@ -30,6 +35,28 @@ func (c *Controller) dropLogicalReplicationSlot(replicationSlotName *string) err
 	err := c.writeTransaction(c.srcDatabaseConnection, &statement, *replicationSlotName)
 
 	return err
+}
+
+func (c *Controller) getLSNDistanceForLogicalReplicationSlot(replicationSlotName *string) (*int64, error) {
+	lsnDistances := []string{}
+
+	statement := `
+	SELECT
+		(pg_current_wal_lsn() - confirmed_flush_lsn) AS lsn_distance
+	FROM pg_catalog.pg_replication_slots
+	WHERE slot_name = '%s';`
+
+	_, err := c.readTransaction(&lsnDistances, c.srcDatabaseConnection, &statement, *replicationSlotName)
+	if err != nil {
+		return nil, err
+	}
+
+	lsnDistance, err := strconv.ParseInt(lsnDistances[0], 10, 64)
+	if err != nil {
+		return nil, err
+	}
+
+	return &lsnDistance, nil
 }
 
 func (c *Controller) logicalReplicationSlotExists(replicationSlotName *string) (bool, error) {

@@ -17,6 +17,9 @@ import (
 
 	"db_relocate/log"
 
+	"errors"
+	"time"
+
 	"fmt"
 	"strings"
 )
@@ -70,7 +73,40 @@ func (c *Controller) diffDBParameters(existingParameters map[string]*rdsTypes.Pa
 	return diffParameters
 }
 
-func (c *Controller) addDBParameters(parameterGroupName *string, dbParameters map[string]*rdsTypes.Parameter) error {
+// No waiter available for db parameter group modification.
+func (c *Controller) waitForDBParameterGroupUpdate(instance *rdsTypes.DBInstance) error {
+	startTime := time.Now()
+	waitTimeout := time.Minute * 15
+	checkInterval := time.Second * 30
+
+	instances, err := c.DescribeDBInstance(instance.DBInstanceIdentifier)
+	if err != nil {
+		return err
+	}
+	parameterApplyStatus := instances[0].DBParameterGroups[0].ParameterApplyStatus
+
+	for *parameterApplyStatus == "applying" || *parameterApplyStatus == "removing" {
+		currentTime := time.Now()
+		if currentTime.Sub(startTime) > waitTimeout {
+			return errors.New(fmt.Sprintf(
+				"Reached a timeout '%s', while waiting for parameter apply on DB instance!",
+				waitTimeout.String(),
+			))
+		}
+
+		time.Sleep(checkInterval)
+
+		instances, err = c.DescribeDBInstance(instance.DBInstanceIdentifier)
+		if err != nil {
+			return err
+		}
+		parameterApplyStatus = instances[0].DBParameterGroups[0].ParameterApplyStatus
+	}
+
+	return nil
+}
+
+func (c *Controller) addDBParameters(instance *rdsTypes.DBInstance, dbParameters map[string]*rdsTypes.Parameter) error {
 	parameters := []rdsTypes.Parameter{}
 	for _, value := range dbParameters {
 		parameters = append(
@@ -82,7 +118,7 @@ func (c *Controller) addDBParameters(parameterGroupName *string, dbParameters ma
 		)
 	}
 	input := &rds.ModifyDBParameterGroupInput{
-		DBParameterGroupName: parameterGroupName,
+		DBParameterGroupName: instance.DBParameterGroups[0].DBParameterGroupName,
 		Parameters:           parameters,
 	}
 
@@ -91,7 +127,8 @@ func (c *Controller) addDBParameters(parameterGroupName *string, dbParameters ma
 		return err
 	}
 
-	return nil
+	err = c.waitForDBParameterGroupUpdate(instance)
+	return err
 }
 
 func (c *Controller) isDefaultDBParameterGroup(parameterGroup *rdsTypes.DBParameterGroup) bool {
@@ -165,7 +202,7 @@ func (c *Controller) EnsureParameters(instance *rdsTypes.DBInstance, desiredPara
 	parametersNeeded := c.diffDBParameters(existingParameters, desiredParameters)
 	if len(parametersNeeded) > 0 {
 		log.Debugln("Applying DB parameters!")
-		err = c.addDBParameters(instance.DBParameterGroups[0].DBParameterGroupName, parametersNeeded)
+		err = c.addDBParameters(instance, parametersNeeded)
 		if err != nil {
 			return err
 		}

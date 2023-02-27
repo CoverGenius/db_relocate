@@ -52,7 +52,6 @@ func (c *Controller) initPreFlightChecks() *preFlightChecks {
 
 func (c *Controller) srcDatabaseInstanceExistsCheck(pfc *preFlightChecks) (*rdsTypes.DBInstance, error) {
 	instance, err := c.awsController.DescribeDBInstance(&c.configuration.Items.Src.InstanceID)
-
 	if err != nil {
 		return nil, err
 	}
@@ -72,6 +71,11 @@ func (c *Controller) srcDatabaseInstanceExistsCheck(pfc *preFlightChecks) (*rdsT
 func (c *Controller) dstDatabaseInstanceExistsCheck(pfc *preFlightChecks) (*rdsTypes.DBInstance, error) {
 	instance, err := c.awsController.DescribeDBInstance(&c.configuration.Items.Dst.InstanceID)
 	if err != nil {
+		var apiError *rdsTypes.DBInstanceNotFoundFault
+		if errors.As(err, &apiError) {
+			pfc.preFlightChecks["DstDatabaseExists"] = true
+			return nil, nil
+		}
 		return nil, err
 	}
 
@@ -321,7 +325,7 @@ func (c *Controller) logicalReplicationSlotsCheck(pfc *preFlightChecks) error {
 		return err
 	}
 
-	if !ok {
+	if ok {
 		pfc.preFlightChecks["LogicalReplicationSlots"] = false
 		pfc.passed = false
 

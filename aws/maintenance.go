@@ -33,13 +33,13 @@ func (c *Controller) isInServiceWindow(now *time.Time, serviceWindowStart *time.
 
 	// Check if the current time is before the 2 hours of service window start.
 	if int(now.Sub(*serviceWindowStart).Hours()) < -SERVICE_WINDOW_LOW_THRESHOLD {
-		log.Errorf("Current time %s is too close to a service window start!", now.String())
+		log.Errorf("Current time %s is too close to a service window start: %s!", now.String(), serviceWindowStart.String())
 		return true
 	}
 
 	// Check if the current time is less than 10 minutes since the service window ends.
 	if int(now.Sub(*serviceWindowEnd).Minutes()) < SERVICE_WINDOW_HIGH_THRESHOLD {
-		log.Errorf("Current time %s is too close to a service window end!", now.String())
+		log.Errorf("Current time %s is too close to a service window end: %s!", now.String(), serviceWindowEnd.String())
 		return true
 	}
 

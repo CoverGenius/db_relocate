@@ -20,7 +20,7 @@ import (
 
 const (
 	HEALTHCHECK_TABLE_NAME string        = "healthcheck_heartbeats"
-	HEALTHCHECK_INTERVAL   time.Duration = 1 // seconds
+	HEALTHCHECK_INTERVAL   time.Duration = 10 // seconds
 )
 
 func (c *Controller) fetchHeartBeatRecords() ([]int64, error) {

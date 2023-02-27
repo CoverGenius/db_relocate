@@ -15,6 +15,7 @@ import (
 	"db_relocate/log"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -141,6 +142,42 @@ func (c *Controller) PrepareDstDatabaseForUpgrade(latestUnhealthyLSN *string) er
 	if err != nil {
 		return err
 	}
+
+	return nil
+}
+
+func (c *Controller) WaitUntilSync() error {
+	startTime := time.Now()
+	waitTimeout := time.Minute * WAIT_UNTIL_SYNC_TIMEOUT
+	checkInterval := time.Second * 10
+	replicationSlotName := REPLICATION_SLOT_NAME
+
+	currentLSNDistance, err := c.getLSNDistanceForLogicalReplicationSlot(&replicationSlotName)
+	if err != nil {
+		return err
+	}
+
+	for *currentLSNDistance != 0 {
+		currentTime := time.Now()
+		if currentTime.Sub(startTime) > waitTimeout {
+			return errors.New(fmt.Sprintf(
+				"Reached a timeout '%s', while waiting for sync between old and new masters. LSN distance: '%d'",
+				waitTimeout.String(),
+				*currentLSNDistance,
+			))
+		}
+
+		time.Sleep(checkInterval)
+
+		currentLSNDistance, err = c.getLSNDistanceForLogicalReplicationSlot(&replicationSlotName)
+		if err != nil {
+			return err
+		}
+		log.Infof("Current LSN distance between old and new master: %d", *currentLSNDistance)
+
+	}
+
+	log.Infoln("Old and new masters are in sync!")
 
 	return nil
 }

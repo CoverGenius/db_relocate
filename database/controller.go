@@ -44,7 +44,7 @@ func initDatabaseConnection(user *string, password *string, host *string, port *
 	return connection, nil
 }
 
-func (c *Controller) InitUpgradeDatabaseConnection(host *string) error {
+func (c *Controller) InitDestinationDatabaseConnection(host *string) error {
 	log.Infof("Initializing destination database connection to host: %s", *host)
 
 	connection, err := initDatabaseConnection(
@@ -64,26 +64,39 @@ func (c *Controller) InitUpgradeDatabaseConnection(host *string) error {
 	return nil
 }
 
+func (c *Controller) InitSourceDatabaseConnection() error {
+	log.Infoln("Initializing source database connection.")
+
+	connection, err := initDatabaseConnection(
+		&c.configuration.Items.Src.User,
+		&c.configuration.Items.Src.Password,
+		&c.configuration.Items.Src.Host,
+		&c.configuration.Items.Src.Port,
+		&c.configuration.Items.Src.Name,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	c.srcDatabaseConnection = connection
+
+	return nil
+}
+
 func NewController(configuration *types.Configuration, errorChannel chan error) (*Controller, error) {
 	log.Infoln("Initializing database controller.")
+	controller := &Controller{
+		configuration: configuration,
+		errorChannel:  errorChannel,
+	}
 
-	log.Infoln("Initializing source database connection.")
-	connection, err := initDatabaseConnection(
-		&configuration.Items.Src.User,
-		&configuration.Items.Src.Password,
-		&configuration.Items.Src.Host,
-		&configuration.Items.Src.Port,
-		&configuration.Items.Src.Name,
-	)
+	err := controller.InitSourceDatabaseConnection()
 	if err != nil {
 		return nil, err
 	}
 
-	return &Controller{
-		srcDatabaseConnection: connection,
-		configuration:         configuration,
-		errorChannel:          errorChannel,
-	}, nil
+	return controller, nil
 }
 
 func setupDatabaseMockData() (*Controller, *sqlmock.Sqlmock) {
