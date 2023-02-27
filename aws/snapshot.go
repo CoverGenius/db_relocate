@@ -24,10 +24,10 @@ import (
 
 const (
 	SNAPSHOT_IDENTIFIER_SUFFIX string = "upgrade"
-	SNAPSHOT_CREATE_TIMEOUT    string = "30m"
-	SNAPSHOT_UPGRADE_TIMEOUT   string = "30m"
-	SNAPSHOT_COPY_TIMEOUT      string = "30m"
-	SNAPSHOT_RESTORE_TIMEOUT   string = "45m"
+	SNAPSHOT_CREATE_TIMEOUT    string = "60m"
+	SNAPSHOT_UPGRADE_TIMEOUT   string = "60m"
+	SNAPSHOT_COPY_TIMEOUT      string = "60m"
+	SNAPSHOT_RESTORE_TIMEOUT   string = "60m"
 	SNAPSHOT_ENCRYPTED_SUFFIX  string = "-encrypted"
 )
 

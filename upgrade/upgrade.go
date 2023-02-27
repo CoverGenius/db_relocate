@@ -15,10 +15,6 @@ import (
 	"time"
 )
 
-const (
-	COOLDOWN_PERIOD time.Duration = 5 // minutes
-)
-
 func (c *Controller) Run() error {
 	now := time.Now().UTC()
 	instance, err := c.runPreFlightChecks(&now)
@@ -58,7 +54,7 @@ func (c *Controller) Run() error {
 		return err
 	}
 
-	err = c.databaseController.InitUpgradeDatabaseConnection(newInstance.Endpoint.Address)
+	err = c.databaseController.InitDestinationDatabaseConnection(newInstance.Endpoint.Address)
 	if err != nil {
 		return err
 	}
@@ -71,7 +67,10 @@ func (c *Controller) Run() error {
 	heartbeatTicker.Stop()
 	heartBeatDoneChannel <- true
 
-	time.Sleep(COOLDOWN_PERIOD * time.Minute)
+	err = c.databaseController.WaitUntilSync()
+	if err != nil {
+		return err
+	}
 
 	err = c.databaseController.CompareSendAndReceivedHeartbeatRecords(heartBeatRecords)
 	if err != nil {

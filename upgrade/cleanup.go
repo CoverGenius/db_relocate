@@ -22,31 +22,31 @@ func (c *Controller) performCleanup(instance *rdsTypes.DBInstance) error {
 
 	cleanupOperations := []*cleanupOperation{
 		{
-			message:          "Ready to delete a subscription that was used in an upgrade/migrations process: y/N?",
+			message:          "Ready to delete a subscription that was used in an upgrade/migrations process: y/n?",
 			positiveResponse: "y",
 			negativeResponse: "n",
 			cleanupFunction:  c.databaseController.DeleteUpgradeSubscription,
 		},
 		{
-			message:          "Ready to drop a table that was used in an upgrade/migrations process for healthcheck purposes: y/N?",
+			message:          "Ready to drop a table that was used in an upgrade/migrations process for healthcheck purposes: y/n?",
 			positiveResponse: "y",
 			negativeResponse: "n",
 			cleanupFunction:  c.databaseController.DropHealthCheckTable,
 		},
 		{
-			message:          "Ready to delete a user that was used in an upgrade/migrations process: y/N?",
+			message:          "Ready to delete a user that was used in an upgrade/migrations process: y/n?",
 			positiveResponse: "y",
 			negativeResponse: "n",
 			cleanupFunction:  c.databaseController.DeleteUpgradeUser,
 		},
 		{
-			message:          "Ready to drop a replication slot that was used in an upgrade/migrations process: y/N?",
+			message:          "Ready to drop a replication slot that was used in an upgrade/migrations process: y/n?",
 			positiveResponse: "y",
 			negativeResponse: "n",
 			cleanupFunction:  c.databaseController.DropUpgradeLogicalReplicationSlot,
 		},
 		{
-			message:          "Ready to drop a publication that was used in an upgrade/migrations process: y/N?",
+			message:          "Ready to drop a publication that was used in an upgrade/migrations process: y/n?",
 			positiveResponse: "y",
 			negativeResponse: "n",
 			cleanupFunction:  c.databaseController.DropUpgradePublication,
@@ -72,7 +72,7 @@ func (c *Controller) performCleanup(instance *rdsTypes.DBInstance) error {
 	}
 
 	awsSrcDBInstance := &cleanupOperation{
-		message:          "Ready to stop an RDS instance that was used as a donor in an upgrade/migrations process: y/N?",
+		message:          "Ready to stop an RDS instance that was used as a donor in an upgrade/migrations process: y/n?",
 		positiveResponse: "y",
 		negativeResponse: "n",
 	}

@@ -31,6 +31,12 @@ func (c *Controller) ensureParametersOnSrcDB(instance *rdsTypes.DBInstance) erro
 	}
 
 	err := c.awsController.EnsureParameters(instance, requiredParametersOnSrcDBInstance)
+	if err != nil {
+		return err
+	}
+
+	// TODO: migrate to https://github.com/jackc/pgx
+	err = c.databaseController.InitSourceDatabaseConnection()
 	return err
 }
 
@@ -44,5 +50,10 @@ func (c *Controller) ensureParametersOnDstDB(instance *rdsTypes.DBInstance) erro
 	}
 
 	err := c.awsController.EnsureParameters(instance, requiredParametersOnDstDBInstance)
+	if err != nil {
+		return err
+	}
+	// TODO: migrate to https://github.com/jackc/pgx
+	err = c.databaseController.InitDestinationDatabaseConnection(instance.Endpoint.Address)
 	return err
 }
