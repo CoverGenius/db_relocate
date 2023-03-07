@@ -100,6 +100,7 @@ Name                | Description
 `user`              | (default: upgrade) The username to use when creating a user for logical replication.
 `password`          | (default: s4p3rs3cr3t!) The password to use when creating a user for logical replication.
 `vpc_id`            | (default: "") The ID of the VPC to use during pre-flight checks(e.g: security groups, subnet_group). If not provided will be copied from the source database.
+`ca_identifier`     | (default: "") The CA Identifier to apply to the new instance. If not provided will be copied from the source database.
 
 
 ## Future plans

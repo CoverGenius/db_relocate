@@ -226,5 +226,12 @@ func (c *Controller) RunDBSnapshotMaintenance(instance *rdsTypes.DBInstance) (*r
 		return nil, err
 	}
 
+	if c.configuration.Items.Upgrade.CAIdentifier != "" {
+		err = c.setCAIdentifier(newInstance, &c.configuration.Items.Upgrade.CAIdentifier)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return newInstance, nil
 }

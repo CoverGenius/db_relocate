@@ -22,6 +22,7 @@ import (
 
 const (
 	DB_INSTANCE_REBOOT_TIMEOUT string = "15m"
+	DB_INSTANCE_MODIFY_TIMEOUT string = "30m"
 )
 
 func (c *Controller) DescribeDBInstance(instanceID *string) ([]rdsTypes.DBInstance, error) {
@@ -143,6 +144,80 @@ func (c *Controller) IsValidInstanceClass(engineVersion *string) (bool, error) {
 		"Failed to validate the provided instance class: '%s'. Available instance classes: %v",
 		c.configuration.Items.Upgrade.InstanceClass,
 		validInstanceClasses,
+	)
+
+	return false, nil
+}
+
+func (c *Controller) setCAIdentifier(instance *rdsTypes.DBInstance, caIdentifier *string) error {
+	log.Infof("Modifying an instance to use a new CA identifier: '%s'", *caIdentifier)
+	instanceInput := &rds.ModifyDBInstanceInput{
+		DBInstanceIdentifier:    instance.DBInstanceIdentifier,
+		CACertificateIdentifier: caIdentifier,
+		ApplyImmediately:        true,
+	}
+	_, err := c.rdsClient.ModifyDBInstance(*c.configuration.Context, instanceInput)
+	if err != nil {
+		return err
+	}
+
+	log.Infoln("Waiting for an instance to become available.")
+	waitParams := &rds.DescribeDBInstancesInput{
+		DBInstanceIdentifier: instance.DBInstanceIdentifier,
+	}
+	waiter := rds.NewDBInstanceAvailableWaiter(c.rdsClient)
+
+	duration, err := time.ParseDuration(DB_INSTANCE_MODIFY_TIMEOUT)
+	if err != nil {
+		return err
+	}
+	err = waiter.Wait(*c.configuration.Context, waitParams, duration)
+	if err != nil {
+		return err
+	}
+
+	err = c.rebootDBInstance(instance)
+
+	return err
+}
+
+func (c *Controller) getValidCAIdentifiers() ([]rdsTypes.Certificate, error) {
+	validCAIdentifiers := []rdsTypes.Certificate{}
+
+	input := &rds.DescribeCertificatesInput{}
+
+	paginator := rds.NewDescribeCertificatesPaginator(c.rdsClient, input)
+	for paginator.HasMorePages() {
+		caIdentifiers, err := paginator.NextPage(*c.configuration.Context)
+		if err != nil {
+			return nil, err
+		}
+		validCAIdentifiers = append(validCAIdentifiers, caIdentifiers.Certificates...)
+	}
+
+	return validCAIdentifiers, nil
+}
+
+func (c *Controller) IsValidCAIdentifier() (bool, error) {
+	// If empty, the CA identifier will be copied from the source instance.
+	if c.configuration.Items.Upgrade.CAIdentifier == "" {
+		return true, nil
+	}
+
+	validCAIdentifiers, err := c.getValidCAIdentifiers()
+	if err != nil {
+		return false, err
+	}
+
+	for idx := range validCAIdentifiers {
+		if c.configuration.Items.Upgrade.CAIdentifier == *validCAIdentifiers[idx].CertificateIdentifier {
+			return true, nil
+		}
+	}
+
+	log.Errorf(
+		"Failed to validate the provided CA Identifier: '%s'!",
+		c.configuration.Items.Upgrade.CAIdentifier,
 	)
 
 	return false, nil
