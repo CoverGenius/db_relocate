@@ -29,6 +29,7 @@ type DBInstanceDetails struct {
 }
 
 type UpgradeDetails struct {
+	CAIdentifier     string
 	SubnetGroupName  string
 	EngineVersion    string
 	KMSID            string
@@ -95,6 +96,7 @@ func setDefault(v *viper.Viper) {
 	v.SetDefault("upgrade.user", "upgrade")
 	v.SetDefault("upgrade.password", "s4p3rs3cr3t!")
 	v.SetDefault("upgrade.vpc_id", "")
+	v.SetDefault("upgrade.ca_identifier", "")
 }
 
 func getSrcDBDetails(v *viper.Viper) *DBInstanceDetails {
@@ -135,6 +137,7 @@ func getUpgradeDetails(v *viper.Viper) *UpgradeDetails {
 		User:             v.GetString("upgrade.user"),
 		Password:         v.GetString("upgrade.password"),
 		VPCID:            v.GetString("upgrade.vpc_id"),
+		CAIdentifier:     v.GetString("upgrade.ca_identifier"),
 	}
 	return upgradeDetails
 }

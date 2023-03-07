@@ -223,6 +223,25 @@ func (c *Controller) validInstanceClassCheck(pfc *preFlightChecks) error {
 	return nil
 }
 
+func (c *Controller) validCAIdentifier(pfc *preFlightChecks) error {
+	ok, err := c.awsController.IsValidCAIdentifier()
+	if err != nil {
+		return err
+	}
+
+	if !ok {
+		pfc.preFlightChecks["CAIdentifier"] = false
+		pfc.passed = false
+
+		return nil
+
+	}
+
+	pfc.preFlightChecks["CAIdentifier"] = true
+
+	return nil
+}
+
 func (c *Controller) backupWindowCheck(pfc *preFlightChecks, instance *rdsTypes.DBInstance, now *time.Time) error {
 	isBackupWindow, err := c.awsController.IsDBInstanceInBackupWindow(instance, now)
 	if err != nil {
@@ -320,20 +339,20 @@ func (c *Controller) databaseUserCheck(pfc *preFlightChecks) error {
 }
 
 func (c *Controller) logicalReplicationSlotsCheck(pfc *preFlightChecks) error {
-	ok, err := c.databaseController.LogicalReplicationSlotsExists()
+	ok, err := c.databaseController.UpgradeLogicalReplicationSlotExists()
 	if err != nil {
 		return err
 	}
 
 	if ok {
-		pfc.preFlightChecks["LogicalReplicationSlots"] = false
+		pfc.preFlightChecks["LogicalReplicationSlot"] = false
 		pfc.passed = false
 
 		return nil
 
 	}
 
-	pfc.preFlightChecks["LogicalReplicationSlots"] = true
+	pfc.preFlightChecks["LogicalReplicationSlot"] = true
 
 	return nil
 }
@@ -398,6 +417,11 @@ func (c *Controller) runPreFlightChecks(now *time.Time) (*rdsTypes.DBInstance, e
 	}
 
 	err = c.validStorageTypeCheck(preFlightChecks, srcDatabaseInstance)
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.validCAIdentifier(preFlightChecks)
 	if err != nil {
 		return nil, err
 	}

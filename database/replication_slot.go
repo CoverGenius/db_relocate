@@ -79,23 +79,10 @@ func (c *Controller) logicalReplicationSlotExists(replicationSlotName *string) (
 	return exists, nil
 }
 
-func (c *Controller) LogicalReplicationSlotsExists() (bool, error) {
-	replicationSlots := []replicationSlot{}
-	statement := `
-	SELECT
-		slot_name AS name,
-		plugin AS plugin,
-		slot_type AS type,
-		database AS database,
-		active AS active
-	FROM pg_catalog.pg_replication_slots;`
+func (c *Controller) UpgradeLogicalReplicationSlotExists() (bool, error) {
+	replicationSlotName := REPLICATION_SLOT_NAME
 
-	exists, err := c.readTransaction(&replicationSlots, c.srcDatabaseConnection, &statement)
-	if err != nil {
-		return false, err
-	}
-
-	return exists, nil
+	return c.logicalReplicationSlotExists(&replicationSlotName)
 }
 
 func (c *Controller) ensureLogicalReplicationSlot() error {
