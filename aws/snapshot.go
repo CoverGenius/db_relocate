@@ -149,6 +149,8 @@ func (c *Controller) sanitizeTargetDBInstanceConfiguration(instance *rdsTypes.DB
 
 	configuration.setDBParameterGroupName(c.configuration.Items.Upgrade, instance)
 
+	configuration.setStorageSize(c.configuration.Items.Upgrade, instance)
+
 	configuration.setStorageType(c.configuration.Items.Upgrade, instance)
 
 	return &configuration
@@ -160,7 +162,7 @@ func (c *Controller) restoreDBSnapshot(snapshot *rdsTypes.DBSnapshot, instance *
 
 	input := &rds.RestoreDBInstanceFromDBSnapshotInput{
 		DBInstanceIdentifier:            configuration.instanceIdentifier,
-		AllocatedStorage:                &snapshot.AllocatedStorage,
+		AllocatedStorage:                configuration.storageSize,
 		AutoMinorVersionUpgrade:         &instance.AutoMinorVersionUpgrade,
 		CopyTagsToSnapshot:              &instance.CopyTagsToSnapshot,
 		DBInstanceClass:                 configuration.instanceClass,

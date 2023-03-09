@@ -27,6 +27,7 @@ type targetDBConfiguration struct {
 	instanceClass       *string
 	parameterGroupName  *string
 	storageType         *string
+	storageSize         *int32
 	iops                *int32
 	storageThroughput   *int32
 }
@@ -88,6 +89,18 @@ func (tdbc *targetDBConfiguration) setDBParameterGroupName(upgradeConfiguration 
 	} else {
 		tdbc.parameterGroupName = &upgradeConfiguration.ParameterGroup
 	}
+}
+
+func (tdbc *targetDBConfiguration) setStorageSize(upgradeConfiguration *types.UpgradeDetails, instance *rdsTypes.DBInstance) {
+	if upgradeConfiguration.StorageSize == 0 {
+		log.Infoln("Storage size was not specified by the user. Copying existing one from source database!")
+
+		tdbc.storageSize = &instance.AllocatedStorage
+	} else {
+		tdbc.storageSize = a.Int32(int32(upgradeConfiguration.StorageSize))
+	}
+
+	instance.AllocatedStorage = int32(upgradeConfiguration.StorageSize)
 }
 
 func (tdbc *targetDBConfiguration) setStorageType(upgradeConfiguration *types.UpgradeDetails, instance *rdsTypes.DBInstance) {
