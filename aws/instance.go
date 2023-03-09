@@ -21,8 +21,9 @@ import (
 )
 
 const (
-	DB_INSTANCE_REBOOT_TIMEOUT string = "15m"
-	DB_INSTANCE_MODIFY_TIMEOUT string = "30m"
+	DB_INSTANCE_REBOOT_TIMEOUT   string = "15m"
+	DB_INSTANCE_MODIFY_TIMEOUT   string = "30m"
+	DB_INSTANCE_MAX_STORAGE_SIZE int    = 5120 // in GB
 )
 
 func (c *Controller) DescribeDBInstance(instanceID *string) ([]rdsTypes.DBInstance, error) {
@@ -264,6 +265,35 @@ func (c *Controller) IsValidStorageType(instance *rdsTypes.DBInstance) (bool, er
 	)
 
 	return false, nil
+}
+
+func (c *Controller) IsValidStorageSize(instance *rdsTypes.DBInstance) (bool, error) {
+	// If empty, the storage size will be copied from the source instance.
+	if c.configuration.Items.Upgrade.StorageSize == 0 {
+		return true, nil
+	}
+
+	if instance.AllocatedStorage > int32(c.configuration.Items.Upgrade.StorageSize) {
+		log.Errorf(
+			"Provided storage size: '%d' is smaller than the actual one: '%d'!",
+			c.configuration.Items.Upgrade.StorageSize,
+			instance.AllocatedStorage,
+		)
+
+		return false, nil
+	}
+
+	if c.configuration.Items.Upgrade.StorageSize > DB_INSTANCE_MAX_STORAGE_SIZE {
+		log.Errorf(
+			"Provided storage size: '%d' is bigger than the maximum storage size: '%d'!",
+			c.configuration.Items.Upgrade.StorageSize,
+			DB_INSTANCE_MAX_STORAGE_SIZE,
+		)
+
+		return false, nil
+	}
+
+	return true, nil
 }
 
 func (c *Controller) StopSrcDBInstance(instance *rdsTypes.DBInstance) error {

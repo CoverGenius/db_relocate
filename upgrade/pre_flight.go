@@ -204,6 +204,25 @@ func (c *Controller) validStorageTypeCheck(pfc *preFlightChecks, instance *rdsTy
 	return nil
 }
 
+func (c *Controller) validStorageSizeCheck(pfc *preFlightChecks, instance *rdsTypes.DBInstance) error {
+	ok, err := c.awsController.IsValidStorageSize(instance)
+	if err != nil {
+		return err
+	}
+
+	if !ok {
+		pfc.preFlightChecks["StorageSize"] = false
+		pfc.passed = false
+
+		return nil
+
+	}
+
+	pfc.preFlightChecks["StorageSize"] = true
+
+	return nil
+}
+
 func (c *Controller) validInstanceClassCheck(pfc *preFlightChecks) error {
 	ok, err := c.awsController.IsValidInstanceClass(&c.configuration.Items.Upgrade.InstanceClass)
 	if err != nil {
@@ -417,6 +436,11 @@ func (c *Controller) runPreFlightChecks(now *time.Time) (*rdsTypes.DBInstance, e
 	}
 
 	err = c.validStorageTypeCheck(preFlightChecks, srcDatabaseInstance)
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.validStorageSizeCheck(preFlightChecks, srcDatabaseInstance)
 	if err != nil {
 		return nil, err
 	}

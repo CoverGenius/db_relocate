@@ -37,6 +37,7 @@ type UpgradeDetails struct {
 	ParameterGroup   string
 	InstanceClass    string
 	StorageType      string
+	StorageSize      int
 	Password         string
 	User             string
 	VPCID            string
@@ -93,6 +94,7 @@ func setDefault(v *viper.Viper) {
 	v.SetDefault("upgrade.parameter_group", "")
 	v.SetDefault("upgrade.instance_class", "")
 	v.SetDefault("upgrade.storage_type", "")
+	v.SetDefault("upgrade.storage_size", 0)
 	v.SetDefault("upgrade.user", "upgrade")
 	v.SetDefault("upgrade.password", "s4p3rs3cr3t!")
 	v.SetDefault("upgrade.vpc_id", "")
@@ -134,6 +136,7 @@ func getUpgradeDetails(v *viper.Viper) *UpgradeDetails {
 		ParameterGroup:   v.GetString("upgrade.parameter_group"),
 		InstanceClass:    v.GetString("upgrade.instance_class"),
 		StorageType:      v.GetString("upgrade.storage_type"),
+		StorageSize:      v.GetInt("upgrade.storage_size"),
 		User:             v.GetString("upgrade.user"),
 		Password:         v.GetString("upgrade.password"),
 		VPCID:            v.GetString("upgrade.vpc_id"),
