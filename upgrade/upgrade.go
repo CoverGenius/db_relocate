@@ -80,12 +80,7 @@ func (c *Controller) Run() error {
 	log.Infoln("Database snapshot has been upgraded and restored.")
 	log.Infoln("Replication is up and running. All health check records have been synced.")
 
-	err = c.databaseController.IncrementSequenceValues()
-	if err != nil {
-		return err
-	}
-
-	err = c.performCleanup(instance)
+	err = c.performPostUpgradeOperations(instance)
 	if err != nil {
 		return err
 	}

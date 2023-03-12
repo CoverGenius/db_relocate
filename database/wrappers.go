@@ -12,6 +12,7 @@ package database
 
 import (
 	"database/sql"
+	"db_relocate/input"
 	"db_relocate/log"
 	"errors"
 	"fmt"
@@ -178,6 +179,42 @@ func (c *Controller) WaitUntilSync() error {
 	}
 
 	log.Infoln("Old and new masters are in sync!")
+
+	return nil
+}
+
+func (c *Controller) PerformPostUpgradeOperations() error {
+	log.Infoln("Running post-upgrade operations.")
+
+	postUpgradeOperationsInput := []*input.BinaryInputMetadata{
+		{
+			Message:          "Ready to perform VACUUM and then ANALYZE on a new instance: y/n?",
+			PositiveResponse: "y",
+			NegativeResponse: "n",
+			Handler:          c.performVacuumAndThenAnalyze,
+		},
+		{
+			Message:          "Ready to increment sequence values on a new instance: y/n?",
+			PositiveResponse: "y",
+			NegativeResponse: "n",
+			Handler:          c.incrementSequenceValues,
+		},
+	}
+
+	for idx := range postUpgradeOperationsInput {
+		positiveResponse, err := postUpgradeOperationsInput[idx].ProcessBinaryInput()
+		if err != nil {
+			return err
+		}
+
+		if positiveResponse {
+			err = postUpgradeOperationsInput[idx].Handler()
+			if err != nil {
+				return err
+			}
+		}
+
+	}
 
 	return nil
 }

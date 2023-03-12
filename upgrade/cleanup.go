@@ -20,67 +20,60 @@ import (
 func (c *Controller) performCleanup(instance *rdsTypes.DBInstance) error {
 	log.Infoln("Running cleanup operations.")
 
-	cleanupOperations := []*cleanupOperation{
+	cleanupOperationsInput := []*input.BinaryInputMetadata{
 		{
-			message:          "Ready to delete a subscription that was used in an upgrade/migrations process: y/n?",
-			positiveResponse: "y",
-			negativeResponse: "n",
-			cleanupFunction:  c.databaseController.DeleteUpgradeSubscription,
+			Message:          "Ready to delete a subscription that was used in an upgrade/migrations process: y/n?",
+			PositiveResponse: "y",
+			NegativeResponse: "n",
+			Handler:          c.databaseController.DeleteUpgradeSubscription,
 		},
 		{
-			message:          "Ready to drop a table that was used in an upgrade/migrations process for healthcheck purposes: y/n?",
-			positiveResponse: "y",
-			negativeResponse: "n",
-			cleanupFunction:  c.databaseController.DropHealthCheckTable,
+			Message:          "Ready to drop a table that was used in an upgrade/migrations process for healthcheck purposes: y/n?",
+			PositiveResponse: "y",
+			NegativeResponse: "n",
+			Handler:          c.databaseController.DropHealthCheckTable,
 		},
 		{
-			message:          "Ready to delete a user that was used in an upgrade/migrations process: y/n?",
-			positiveResponse: "y",
-			negativeResponse: "n",
-			cleanupFunction:  c.databaseController.DeleteUpgradeUser,
+			Message:          "Ready to delete a user that was used in an upgrade/migrations process: y/n?",
+			PositiveResponse: "y",
+			NegativeResponse: "n",
+			Handler:          c.databaseController.DeleteUpgradeUser,
 		},
 		{
-			message:          "Ready to drop a replication slot that was used in an upgrade/migrations process: y/n?",
-			positiveResponse: "y",
-			negativeResponse: "n",
-			cleanupFunction:  c.databaseController.DropUpgradeLogicalReplicationSlot,
+			Message:          "Ready to drop a replication slot that was used in an upgrade/migrations process: y/n?",
+			PositiveResponse: "y",
+			NegativeResponse: "n",
+			Handler:          c.databaseController.DropUpgradeLogicalReplicationSlot,
 		},
 		{
-			message:          "Ready to drop a publication that was used in an upgrade/migrations process: y/n?",
-			positiveResponse: "y",
-			negativeResponse: "n",
-			cleanupFunction:  c.databaseController.DropUpgradePublication,
+			Message:          "Ready to drop a publication that was used in an upgrade/migrations process: y/n?",
+			PositiveResponse: "y",
+			NegativeResponse: "n",
+			Handler:          c.databaseController.DropUpgradePublication,
 		},
 	}
 
-	for idx := range cleanupOperations {
-		positiveResponse, err := input.ProcessBinaryInput(
-			&cleanupOperations[idx].message,
-			&cleanupOperations[idx].positiveResponse,
-			&cleanupOperations[idx].negativeResponse,
-		)
+	for idx := range cleanupOperationsInput {
+		positiveResponse, err := cleanupOperationsInput[idx].ProcessBinaryInput()
 		if err != nil {
 			return err
 		}
 
 		if positiveResponse {
-			err = cleanupOperations[idx].cleanupFunction()
+			err = cleanupOperationsInput[idx].Handler()
 			if err != nil {
 				return err
 			}
 		}
+
 	}
 
-	awsSrcDBInstance := &cleanupOperation{
-		message:          "Ready to stop an RDS instance that was used as a donor in an upgrade/migrations process: y/n?",
-		positiveResponse: "y",
-		negativeResponse: "n",
+	stopAWSSrcDBInstanceInput := &input.BinaryInputMetadata{
+		Message:          "Ready to stop an RDS instance that was used as a donor in an upgrade/migrations process: y/n?",
+		PositiveResponse: "y",
+		NegativeResponse: "n",
 	}
-	positiveResponse, err := input.ProcessBinaryInput(
-		&awsSrcDBInstance.message,
-		&awsSrcDBInstance.positiveResponse,
-		&awsSrcDBInstance.negativeResponse,
-	)
+	positiveResponse, err := stopAWSSrcDBInstanceInput.ProcessBinaryInput()
 	if err != nil {
 		return err
 	}
