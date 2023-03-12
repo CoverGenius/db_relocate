@@ -136,7 +136,7 @@ func (c *Controller) copyDBSnapshot(snapshot *rdsTypes.DBSnapshot, engineVersion
 
 }
 
-func (c *Controller) sanitizeTargetDBInstanceConfiguration(instance *rdsTypes.DBInstance) *targetDBConfiguration {
+func (c *Controller) sanitizeTargetDBInstanceConfiguration(instance *rdsTypes.DBInstance, snapshot *rdsTypes.DBSnapshot) *targetDBConfiguration {
 	configuration := targetDBConfiguration{}
 
 	configuration.setDBInstanceIdentifier(c.configuration.Items, instance)
@@ -149,16 +149,16 @@ func (c *Controller) sanitizeTargetDBInstanceConfiguration(instance *rdsTypes.DB
 
 	configuration.setDBParameterGroupName(c.configuration.Items.Upgrade, instance)
 
-	configuration.setStorageSize(c.configuration.Items.Upgrade, instance)
+	configuration.setStorageSize(c.configuration.Items.Upgrade, snapshot)
 
-	configuration.setStorageType(c.configuration.Items.Upgrade, instance)
+	configuration.setStorageType(c.configuration.Items.Upgrade, snapshot)
 
 	return &configuration
 }
 
 func (c *Controller) restoreDBSnapshot(snapshot *rdsTypes.DBSnapshot, instance *rdsTypes.DBInstance) (*rdsTypes.DBInstance, error) {
 	log.Infoln("Restoring a snapshot!")
-	configuration := c.sanitizeTargetDBInstanceConfiguration(instance)
+	configuration := c.sanitizeTargetDBInstanceConfiguration(instance, snapshot)
 
 	input := &rds.RestoreDBInstanceFromDBSnapshotInput{
 		DBInstanceIdentifier:            configuration.instanceIdentifier,

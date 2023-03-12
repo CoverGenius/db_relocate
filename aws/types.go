@@ -91,28 +91,26 @@ func (tdbc *targetDBConfiguration) setDBParameterGroupName(upgradeConfiguration 
 	}
 }
 
-func (tdbc *targetDBConfiguration) setStorageSize(upgradeConfiguration *types.UpgradeDetails, instance *rdsTypes.DBInstance) {
+func (tdbc *targetDBConfiguration) setStorageSize(upgradeConfiguration *types.UpgradeDetails, snapshot *rdsTypes.DBSnapshot) {
 	if upgradeConfiguration.StorageSize == 0 {
-		log.Infoln("Storage size was not specified by the user. Copying existing one from source database!")
+		log.Infoln("Storage size was not specified by the user. Copying existing one from source database snapshot!")
 
-		tdbc.storageSize = &instance.AllocatedStorage
+		tdbc.storageSize = &snapshot.AllocatedStorage
 	} else {
 		tdbc.storageSize = a.Int32(int32(upgradeConfiguration.StorageSize))
 	}
-
-	instance.AllocatedStorage = int32(upgradeConfiguration.StorageSize)
 }
 
-func (tdbc *targetDBConfiguration) setStorageType(upgradeConfiguration *types.UpgradeDetails, instance *rdsTypes.DBInstance) {
+func (tdbc *targetDBConfiguration) setStorageType(upgradeConfiguration *types.UpgradeDetails, snapshot *rdsTypes.DBSnapshot) {
 	if upgradeConfiguration.StorageType == "" {
-		log.Infoln("Storage type was not specified by the user. Copying existing one from source database!")
-		tdbc.storageType = instance.StorageType
+		log.Infoln("Storage type was not specified by the user. Copying existing one from source database snapshot!")
+		tdbc.storageType = snapshot.StorageType
 	} else {
 		tdbc.storageType = &upgradeConfiguration.StorageType
 	}
 
 	if *tdbc.storageType == GP3_STORAGE_TYPE {
-		if instance.AllocatedStorage < GP3_STORAGE_SIZE_THRESHOLD {
+		if *tdbc.storageSize < GP3_STORAGE_SIZE_THRESHOLD {
 			tdbc.iops = nil
 			tdbc.storageThroughput = nil
 		} else {

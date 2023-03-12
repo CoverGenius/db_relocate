@@ -60,7 +60,7 @@ func (c *Controller) updateSequence(statement *string) error {
 	return err
 }
 
-func (c *Controller) IncrementSequenceValues() error {
+func (c *Controller) incrementSequenceValues() error {
 	log.Infoln("Incrementing sequence values by leaving a small gap in order to avoid conflicts.")
 
 	statement, err := c.prepareSelectSequenceStatement()
