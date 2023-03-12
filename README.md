@@ -96,7 +96,8 @@ Name                | Description
 `security_groups`   | (default: list) A list of security group IDs to use for the new instance. If not provided will be copied from the source database.
 `parameter_group`   | (default: "") The name of the DB parameter group to use for the new instance. Must be compatible with engine version you are upgrading to.
 `instance_class`    | (default: "") The instance class of the new instance.. If not provided will be copied from the source database.
-`storage_type`      | (default: "") The storage type of the new instance. If not provided will be copied from the source database.
+`storage_type`      | (default: "") The storage type of the new instance. If not provided will be copied from the source snapshot.
+`storage_size`      | (int: 0) The storage size of the new instance. If not provided will be copied from the source snapshot.
 `user`              | (default: upgrade) The username to use when creating a user for logical replication.
 `password`          | (default: s4p3rs3cr3t!) The password to use when creating a user for logical replication.
 `vpc_id`            | (default: "") The ID of the VPC to use during pre-flight checks(e.g: security groups, subnet_group). If not provided will be copied from the source database.
