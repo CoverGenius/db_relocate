@@ -23,6 +23,7 @@ type DatabaseMockData struct {
 	Context    *context.Context
 	Connection *sqlx.DB
 	Mock       *sqlmock.Sqlmock
+	DSN        *string
 }
 
 func SetupDatabaseMockData() *DatabaseMockData {

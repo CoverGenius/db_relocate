@@ -15,8 +15,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-
-	"github.com/jmoiron/sqlx"
 )
 
 func (c *Controller) addLoginOption(user *user) error {
@@ -82,12 +80,12 @@ func (c *Controller) getUserAndRoles(username *string, u *user) (bool, error) {
 	return true, nil
 }
 
-func (c *Controller) userExists(connection *sqlx.DB, username *string) (bool, error) {
+func (c *Controller) userExists(databaseConnection *databaseConnection, username *string) (bool, error) {
 	users := []string{}
 
 	statement := `SELECT rolname FROM pg_catalog.pg_roles WHERE rolname='%s';`
 
-	exists, err := c.readTransaction(&users, connection, &statement, *username)
+	exists, err := c.readTransaction(&users, databaseConnection, &statement, *username)
 
 	if err != nil {
 		return false, err
@@ -96,30 +94,30 @@ func (c *Controller) userExists(connection *sqlx.DB, username *string) (bool, er
 	return exists, nil
 }
 
-func (c *Controller) revokeAllPrivileges(connection *sqlx.DB, username *string, schema *string, database *string) error {
+func (c *Controller) revokeAllPrivileges(databaseConnection *databaseConnection, username *string, schema *string, database *string) error {
 	statement := `REVOKE ALL ON DATABASE %s FROM %s;`
 
-	err := c.writeTransaction(connection, &statement, *database, *username)
+	err := c.writeTransaction(databaseConnection, &statement, *database, *username)
 	if err != nil {
 		return err
 	}
 
 	statement = `REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA %s FROM %s;`
 
-	err = c.writeTransaction(connection, &statement, *schema, *username)
+	err = c.writeTransaction(databaseConnection, &statement, *schema, *username)
 
 	return err
 }
 
-func (c *Controller) dropUser(connection *sqlx.DB, username *string, schema *string, database *string) error {
-	err := c.revokeAllPrivileges(connection, username, schema, database)
+func (c *Controller) dropUser(databaseConnection *databaseConnection, username *string, schema *string, database *string) error {
+	err := c.revokeAllPrivileges(databaseConnection, username, schema, database)
 	if err != nil {
 		return err
 	}
 
 	statement := `DROP USER %s;`
 
-	err = c.writeTransaction(connection, &statement, *username)
+	err = c.writeTransaction(databaseConnection, &statement, *username)
 
 	return err
 }
