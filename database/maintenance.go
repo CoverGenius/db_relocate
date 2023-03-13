@@ -17,7 +17,7 @@ func (c *Controller) performVacuumAndThenAnalyze() error {
 
 	statement := `VACUUM(ANALYZE, DISABLE_PAGE_SKIPPING);`
 
-	err := c.writeTransaction(c.srcDatabaseConnection, &statement)
+	err := c.simpleWriteTransaction(c.srcDatabaseConnection, &statement)
 
 	return err
 }

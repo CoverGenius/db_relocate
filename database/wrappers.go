@@ -30,13 +30,55 @@ func (c *Controller) buildQuery(statement *string, args ...interface{}) *string 
 	return &query
 }
 
-func (c *Controller) writeTransaction(connection *sqlx.DB, statement *string, args ...interface{}) error {
+// TODO: use interface instead in order to distinguish testing and real database connections
+// Or migrate to pgx.
+func (c *Controller) ensureDatabaseConnection(databaseConnection *databaseConnection) error {
+	if *databaseConnection.id == "test" {
+		return nil
+	}
+
+	err := databaseConnection.connection.PingContext(*c.configuration.Context)
+	if err == nil {
+		return nil
+	}
+
+	log.Warnf(
+		"Database connection with an identifier: '%s' is closed. Trying to re-establish.",
+		*databaseConnection.id,
+	)
+	databaseConnection.connection.Close()
+
+	connection, err := sqlx.Connect("postgres", *databaseConnection.dsn)
+	if err != nil {
+		log.Errorf(
+			"Failed to re-establish database connection with an identifier: '%s'!",
+			*databaseConnection.id,
+		)
+		return err
+	}
+
+	log.Infof(
+		"Database connection with an identifier: '%s' was successfully re-established!",
+		*databaseConnection.id,
+	)
+	databaseConnection.connection = connection
+
+	return nil
+}
+
+func (c *Controller) writeTransaction(databaseConnection *databaseConnection, statement *string, args ...interface{}) error {
 	query := c.buildQuery(statement, args...)
 
 	opts := &sql.TxOptions{
 		ReadOnly: false,
 	}
-	tx, err := connection.BeginTxx(*c.configuration.Context, opts)
+
+	err := c.ensureDatabaseConnection(databaseConnection)
+	if err != nil {
+		return err
+	}
+
+	tx, err := databaseConnection.connection.BeginTxx(*c.configuration.Context, opts)
 	if err != nil {
 		return err
 	}
@@ -62,10 +104,15 @@ func (c *Controller) writeTransaction(connection *sqlx.DB, statement *string, ar
 	return nil
 }
 
-func (c *Controller) simpleWriteTransaction(connection *sqlx.DB, statement *string, args ...interface{}) error {
+func (c *Controller) simpleWriteTransaction(databaseConnection *databaseConnection, statement *string, args ...interface{}) error {
 	query := c.buildQuery(statement, args...)
 
-	_, err := connection.Exec(*query)
+	err := c.ensureDatabaseConnection(databaseConnection)
+	if err != nil {
+		return err
+	}
+
+	_, err = databaseConnection.connection.Exec(*query)
 
 	return err
 }
@@ -93,10 +140,15 @@ func (c *Controller) getContainerLength(container interface{}) int {
 	}
 }
 
-func (c *Controller) readTransaction(container interface{}, connection *sqlx.DB, statement *string, args ...interface{}) (bool, error) {
+func (c *Controller) readTransaction(container interface{}, databaseConnection *databaseConnection, statement *string, args ...interface{}) (bool, error) {
 	query := c.buildQuery(statement, args...)
 
-	err := connection.Select(container, *query)
+	err := c.ensureDatabaseConnection(databaseConnection)
+	if err != nil {
+		return false, err
+	}
+
+	err = databaseConnection.connection.Select(container, *query)
 	if err != nil {
 		return false, err
 	}

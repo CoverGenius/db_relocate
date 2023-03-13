@@ -21,14 +21,20 @@ import (
 	_ "github.com/lib/pq"
 )
 
+type databaseConnection struct {
+	connection *sqlx.DB
+	dsn        *string
+	id         *string
+}
+
 type Controller struct {
-	srcDatabaseConnection *sqlx.DB
-	dstDatabaseConnection *sqlx.DB
+	srcDatabaseConnection *databaseConnection
+	dstDatabaseConnection *databaseConnection
 	configuration         *types.Configuration
 	errorChannel          chan error
 }
 
-func initDatabaseConnection(user *string, password *string, host *string, port *string, name *string) (*sqlx.DB, error) {
+func initDatabaseConnection(user *string, password *string, host *string, port *string, name *string, id *string) (*databaseConnection, error) {
 	dsn := fmt.Sprintf(
 		"user=%s password=%s host=%s port=%s dbname=%s sslmode=require",
 		*user,
@@ -41,11 +47,20 @@ func initDatabaseConnection(user *string, password *string, host *string, port *
 	if err != nil {
 		return nil, err
 	}
-	return connection, nil
+
+	databaseConnection := &databaseConnection{
+		connection: connection,
+		dsn:        &dsn,
+		id:         id,
+	}
+
+	return databaseConnection, nil
 }
 
 func (c *Controller) InitDestinationDatabaseConnection(host *string) error {
 	log.Infof("Initializing destination database connection to host: %s", *host)
+
+	connectionId := "destination"
 
 	connection, err := initDatabaseConnection(
 		&c.configuration.Items.Src.User,
@@ -53,6 +68,7 @@ func (c *Controller) InitDestinationDatabaseConnection(host *string) error {
 		host,
 		&c.configuration.Items.Src.Port,
 		&c.configuration.Items.Src.Name,
+		&connectionId,
 	)
 
 	if err != nil {
@@ -67,12 +83,15 @@ func (c *Controller) InitDestinationDatabaseConnection(host *string) error {
 func (c *Controller) InitSourceDatabaseConnection() error {
 	log.Infoln("Initializing source database connection.")
 
+	connectionId := "source"
+
 	connection, err := initDatabaseConnection(
 		&c.configuration.Items.Src.User,
 		&c.configuration.Items.Src.Password,
 		&c.configuration.Items.Src.Host,
 		&c.configuration.Items.Src.Port,
 		&c.configuration.Items.Src.Name,
+		&connectionId,
 	)
 
 	if err != nil {
@@ -101,10 +120,17 @@ func NewController(configuration *types.Configuration, errorChannel chan error) 
 
 func setupDatabaseMockData() (*Controller, *sqlmock.Sqlmock) {
 	databaseMockData := thelper.SetupDatabaseMockData()
+	connectionId := "test"
+
+	databaseConnection := &databaseConnection{
+		connection: databaseMockData.Connection,
+		dsn:        databaseMockData.DSN,
+		id:         &connectionId,
+	}
 
 	return &Controller{
-		srcDatabaseConnection: databaseMockData.Connection,
-		dstDatabaseConnection: databaseMockData.Connection,
+		srcDatabaseConnection: databaseConnection,
+		dstDatabaseConnection: databaseConnection,
 		configuration: &types.Configuration{
 			Context: databaseMockData.Context,
 		},
