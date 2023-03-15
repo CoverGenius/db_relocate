@@ -13,6 +13,7 @@ package aws
 import (
 	a "github.com/aws/aws-sdk-go-v2/aws"
 	c "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials/ec2rolecreds"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/kms"
@@ -37,15 +38,24 @@ type Controller struct {
 }
 
 func initSession(profile *string, region *string, context *context.Context) (*a.Config, error) {
-	log.Infof("Using AWS profile with name: '%s'", *profile)
+	if *profile != "" {
+		log.Infof("Using AWS profile with name: '%s'", *profile)
+		os.Setenv("AWS_PROFILE", *profile)
+		config, err := c.LoadDefaultConfig(*context, c.WithRegion(*region))
+		if err != nil {
+			return nil, err
+		}
 
-	os.Setenv("AWS_PROFILE", *profile)
-	config, err := c.LoadDefaultConfig(*context, c.WithRegion(*region))
-	if err != nil {
-		return nil, err
+		return &config, nil
+	} else {
+		log.Infof("Using AWS EC2 instance profile")
+		config, err := c.LoadDefaultConfig(*context, c.WithRegion(*region), c.WithCredentialsProvider(ec2rolecreds.New()))
+		if err != nil {
+			return nil, err
+		}
+
+		return &config, nil
 	}
-
-	return &config, nil
 }
 
 func NewController(configuration *types.Configuration, errorChannel chan error) (*Controller, error) {
