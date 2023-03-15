@@ -71,7 +71,7 @@ func (c *Configuration) initContext() {
 func setDefault(v *viper.Viper) {
 	v.SetDefault("logging.level", "info")
 	v.SetDefault("force", false)
-	v.SetDefault("aws.profile", "default")
+	v.SetDefault("aws.profile", "")
 	v.SetDefault("aws.region", "us-east-1")
 	v.SetDefault("src.user", "ops")
 	v.SetDefault("src.password", "secret")
