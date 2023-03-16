@@ -21,8 +21,8 @@ import (
 )
 
 const (
-	DB_INSTANCE_REBOOT_TIMEOUT          string = "15m"
-	DB_INSTANCE_MODIFY_TIMEOUT          string = "30m"
+	DB_INSTANCE_REBOOT_TIMEOUT          string = "30m"
+	DB_INSTANCE_MODIFY_TIMEOUT          string = "60m"
 	DB_INSTANCE_MAX_STORAGE_SIZE        int32  = 10240 // in GB
 	DB_INSTANCE_MAX_STORAGE_IOPS        int32  = 64000
 	DB_INSTANCE_MAX_STORAGE_THROUGHTPUT int32  = 4000
@@ -110,6 +110,7 @@ func (c *Controller) getValidInstanceClasses(engineVersion *string) (map[string]
 	validInstanceClasses := make(map[string]bool)
 
 	input := &rds.DescribeOrderableDBInstanceOptionsInput{
+		Engine:        a.String("postgres"),
 		EngineVersion: engineVersion,
 	}
 

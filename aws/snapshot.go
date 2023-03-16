@@ -24,9 +24,9 @@ import (
 
 const (
 	SNAPSHOT_IDENTIFIER_SUFFIX string = "upgrade"
-	SNAPSHOT_CREATE_TIMEOUT    string = "120m"
-	SNAPSHOT_UPGRADE_TIMEOUT   string = "120m"
-	SNAPSHOT_COPY_TIMEOUT      string = "120m"
+	SNAPSHOT_CREATE_TIMEOUT    string = "1440m"
+	SNAPSHOT_UPGRADE_TIMEOUT   string = "1440m"
+	SNAPSHOT_COPY_TIMEOUT      string = "1440m"
 	SNAPSHOT_RESTORE_TIMEOUT   string = "1440m"
 	SNAPSHOT_ENCRYPTED_SUFFIX  string = "-encrypted"
 )
@@ -35,7 +35,8 @@ func (c *Controller) takeDBInstanceSnapshot(instance *rdsTypes.DBInstance) (*rds
 	log.Infoln("Taking a snapshot!")
 	encryptionStatusSuffix := ""
 
-	if instance.StorageEncrypted {
+	// Only in case storage is encrypted with correct KMS key we add encrypted suffix.
+	if instance.StorageEncrypted && *instance.KmsKeyId == c.configuration.Items.Upgrade.KMSID {
 		encryptionStatusSuffix = SNAPSHOT_ENCRYPTED_SUFFIX
 	}
 

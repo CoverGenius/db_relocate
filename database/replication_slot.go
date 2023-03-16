@@ -18,7 +18,7 @@ import (
 
 const (
 	REPLICATION_SLOT_NAME   string        = "upgrade"
-	WAIT_UNTIL_SYNC_TIMEOUT time.Duration = 60 // minutes
+	WAIT_UNTIL_SYNC_TIMEOUT time.Duration = 1440 // minutes
 )
 
 func (c *Controller) createLogicalReplicationSlot() error {
