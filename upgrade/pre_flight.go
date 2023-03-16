@@ -223,6 +223,44 @@ func (c *Controller) validStorageSizeCheck(pfc *preFlightChecks, instance *rdsTy
 	return nil
 }
 
+func (c *Controller) validStorageIOPSCheck(pfc *preFlightChecks) error {
+	ok, err := c.awsController.IsValidStorageIOPS()
+	if err != nil {
+		return err
+	}
+
+	if !ok {
+		pfc.preFlightChecks["StorageIOPS"] = false
+		pfc.passed = false
+
+		return nil
+
+	}
+
+	pfc.preFlightChecks["StorageIOPS"] = true
+
+	return nil
+}
+
+func (c *Controller) validStorageThroughputCheck(pfc *preFlightChecks) error {
+	ok, err := c.awsController.IsValidStorageThroughput()
+	if err != nil {
+		return err
+	}
+
+	if !ok {
+		pfc.preFlightChecks["StorageThroughput"] = false
+		pfc.passed = false
+
+		return nil
+
+	}
+
+	pfc.preFlightChecks["StorageThroughput"] = true
+
+	return nil
+}
+
 func (c *Controller) validInstanceClassCheck(pfc *preFlightChecks) error {
 	ok, err := c.awsController.IsValidInstanceClass(&c.configuration.Items.Upgrade.InstanceClass)
 	if err != nil {
@@ -441,6 +479,16 @@ func (c *Controller) runPreFlightChecks(now *time.Time) (*rdsTypes.DBInstance, e
 	}
 
 	err = c.validStorageSizeCheck(preFlightChecks, srcDatabaseInstance)
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.validStorageIOPSCheck(preFlightChecks)
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.validStorageThroughputCheck(preFlightChecks)
 	if err != nil {
 		return nil, err
 	}

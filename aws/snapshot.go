@@ -153,6 +153,10 @@ func (c *Controller) sanitizeTargetDBInstanceConfiguration(instance *rdsTypes.DB
 
 	configuration.setStorageType(c.configuration.Items.Upgrade, snapshot)
 
+	configuration.setStorageIOPS(c.configuration.Items.Upgrade)
+
+	configuration.setStorageThroughput(c.configuration.Items.Upgrade)
+
 	return &configuration
 }
 

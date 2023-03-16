@@ -29,18 +29,20 @@ type DBInstanceDetails struct {
 }
 
 type UpgradeDetails struct {
-	CAIdentifier     string
-	SubnetGroupName  string
-	EngineVersion    string
-	KMSID            string
-	SecurityGroupIDs []string
-	ParameterGroup   string
-	InstanceClass    string
-	StorageType      string
-	StorageSize      int
-	Password         string
-	User             string
-	VPCID            string
+	CAIdentifier      string
+	SubnetGroupName   string
+	EngineVersion     string
+	KMSID             string
+	SecurityGroupIDs  []string
+	ParameterGroup    string
+	InstanceClass     string
+	StorageType       string
+	StorageSize       int32
+	StorageIOPS       int32
+	StorageThroughput int32
+	Password          string
+	User              string
+	VPCID             string
 }
 
 type Items struct {
@@ -95,6 +97,8 @@ func setDefault(v *viper.Viper) {
 	v.SetDefault("upgrade.instance_class", "")
 	v.SetDefault("upgrade.storage_type", "")
 	v.SetDefault("upgrade.storage_size", 0)
+	v.SetDefault("upgrade.storage_iops", 0)
+	v.SetDefault("upgrade.storage_throughput", 0)
 	v.SetDefault("upgrade.user", "upgrade")
 	v.SetDefault("upgrade.password", "s4p3rs3cr3t!")
 	v.SetDefault("upgrade.vpc_id", "")
@@ -129,18 +133,20 @@ func getDstDBDetails(v *viper.Viper) *DBInstanceDetails {
 
 func getUpgradeDetails(v *viper.Viper) *UpgradeDetails {
 	upgradeDetails := &UpgradeDetails{
-		SubnetGroupName:  v.GetString("upgrade.subnet_group"),
-		EngineVersion:    v.GetString("upgrade.engine_version"),
-		KMSID:            v.GetString("upgrade.kms_id"),
-		SecurityGroupIDs: v.GetStringSlice("upgrade.security_groups"),
-		ParameterGroup:   v.GetString("upgrade.parameter_group"),
-		InstanceClass:    v.GetString("upgrade.instance_class"),
-		StorageType:      v.GetString("upgrade.storage_type"),
-		StorageSize:      v.GetInt("upgrade.storage_size"),
-		User:             v.GetString("upgrade.user"),
-		Password:         v.GetString("upgrade.password"),
-		VPCID:            v.GetString("upgrade.vpc_id"),
-		CAIdentifier:     v.GetString("upgrade.ca_identifier"),
+		SubnetGroupName:   v.GetString("upgrade.subnet_group"),
+		EngineVersion:     v.GetString("upgrade.engine_version"),
+		KMSID:             v.GetString("upgrade.kms_id"),
+		SecurityGroupIDs:  v.GetStringSlice("upgrade.security_groups"),
+		ParameterGroup:    v.GetString("upgrade.parameter_group"),
+		InstanceClass:     v.GetString("upgrade.instance_class"),
+		StorageType:       v.GetString("upgrade.storage_type"),
+		StorageSize:       v.GetInt32("upgrade.storage_size"),
+		StorageIOPS:       v.GetInt32("upgrade.storage_iops"),
+		StorageThroughput: v.GetInt32("upgrade.storage_throughput"),
+		User:              v.GetString("upgrade.user"),
+		Password:          v.GetString("upgrade.password"),
+		VPCID:             v.GetString("upgrade.vpc_id"),
+		CAIdentifier:      v.GetString("upgrade.ca_identifier"),
 	}
 	return upgradeDetails
 }
