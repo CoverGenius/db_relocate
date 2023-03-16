@@ -62,7 +62,7 @@ Name              | Description
 ### AWS configuration block options
 Name              | Description
 ------------------|------------
-`profile`         | (default: default) The AWS profile name to use when connecting to the AWS services.
+`profile`         | (default: "") The AWS profile name to use when connecting to the AWS services. If not specified db_relocate will try to use instance profile attached to ec2 instance it is running on.
 `region`          | (default: us-east-1) The AWS region to use when connecting to the AWS services.
 
 ### Source database configuration block options
@@ -88,19 +88,22 @@ Name              | Description
 `instance_id`     | (default: "") The instance identifier of the destination database. If not specified will be auto-generated.
 
 ### Upgrade configuration block options
-Name                | Description
---------------------|------------
-`subnet_group`      | (default: "") The name of the DB subnet group to use for the new instance. If not specified will be copied from the srouce database.
-`engine_version`    | (default: "") The version of the database engine to upgrade to. Must be higher than used by a source database.
-`kms_id`            | (default: "") The ID of the KMS key to use for encrypting the new instance. KMS key id to use in case source database is not encrypted. If not provided default one will be used.
-`security_groups`   | (default: list) A list of security group IDs to use for the new instance. If not provided will be copied from the source database.
-`parameter_group`   | (default: "") The name of the DB parameter group to use for the new instance. Must be compatible with engine version you are upgrading to.
-`instance_class`    | (default: "") The instance class of the new instance.. If not provided will be copied from the source database.
-`storage_type`      | (default: "") The storage type of the new instance. If not provided will be copied from the source database.
-`user`              | (default: upgrade) The username to use when creating a user for logical replication.
-`password`          | (default: s4p3rs3cr3t!) The password to use when creating a user for logical replication.
-`vpc_id`            | (default: "") The ID of the VPC to use during pre-flight checks(e.g: security groups, subnet_group). If not provided will be copied from the source database.
-`ca_identifier`     | (default: "") The CA Identifier to apply to the new instance. If not provided will be copied from the source database.
+Name                 | Description
+---------------------|------------
+`subnet_group`       | (default: "") The name of the DB subnet group to use for the new instance. If not specified will be copied from the srouce database.
+`engine_version`     | (default: "") The version of the database engine to upgrade to. Must be higher than used by a source database.
+`kms_id`             | (default: "") The ID of the KMS key to use for encrypting the new instance. KMS key id to use in case source database is not encrypted. If not provided default one will be used.
+`security_groups`    | (default: list) A list of security group IDs to use for the new instance. If not provided will be copied from the source database.
+`parameter_group`    | (default: "") The name of the DB parameter group to use for the new instance. Must be compatible with engine version you are upgrading to.
+`instance_class`     | (default: "") The instance class of the new instance.. If not provided will be copied from the source database.
+`storage_type`       | (default: "") The storage type of the new instance. If not provided will be copied from the source database.
+`storage_size`       | (default: 0) The storage size of the new instance. If not provided will be copied from the source snapshot.
+`storage_iops`       | (default: 0) The storage iops of the new instance. If not provided will be set to a base value in case of gp3 storage type.
+`storage_throughput` | (default: 0) The storage throughput of the new instance. If not provided will be set to a base value in case of gp3 storage type.
+`user`               | (default: upgrade) The username to use when creating a user for logical replication.
+`password`           | (default: s4p3rs3cr3t!) The password to use when creating a user for logical replication.
+`vpc_id`             | (default: "") The ID of the VPC to use during pre-flight checks(e.g: security groups, subnet_group). If not provided will be copied from the source database.
+`ca_identifier`      | (default: "") The CA Identifier to apply to the new instance. If not provided will be copied from the source database.
 
 
 ## Future plans

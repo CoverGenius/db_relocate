@@ -21,9 +21,11 @@ import (
 )
 
 const (
-	DB_INSTANCE_REBOOT_TIMEOUT   string = "15m"
-	DB_INSTANCE_MODIFY_TIMEOUT   string = "30m"
-	DB_INSTANCE_MAX_STORAGE_SIZE int    = 5120 // in GB
+	DB_INSTANCE_REBOOT_TIMEOUT          string = "15m"
+	DB_INSTANCE_MODIFY_TIMEOUT          string = "30m"
+	DB_INSTANCE_MAX_STORAGE_SIZE        int32  = 10240 // in GB
+	DB_INSTANCE_MAX_STORAGE_IOPS        int32  = 64000
+	DB_INSTANCE_MAX_STORAGE_THROUGHTPUT int32  = 4000
 )
 
 func (c *Controller) DescribeDBInstance(instanceID *string) ([]rdsTypes.DBInstance, error) {
@@ -273,7 +275,7 @@ func (c *Controller) IsValidStorageSize(instance *rdsTypes.DBInstance) (bool, er
 		return true, nil
 	}
 
-	if instance.AllocatedStorage > int32(c.configuration.Items.Upgrade.StorageSize) {
+	if instance.AllocatedStorage > c.configuration.Items.Upgrade.StorageSize {
 		log.Errorf(
 			"Provided storage size: '%d' is smaller than the actual one: '%d'!",
 			c.configuration.Items.Upgrade.StorageSize,
@@ -294,6 +296,36 @@ func (c *Controller) IsValidStorageSize(instance *rdsTypes.DBInstance) (bool, er
 	}
 
 	return true, nil
+}
+
+func (c *Controller) IsValidStorageIOPS() (bool, error) {
+	// If empty, the storage iops will be set to the ebs volume base value.
+	if c.configuration.Items.Upgrade.StorageIOPS >= 0 &&
+		c.configuration.Items.Upgrade.StorageIOPS <= DB_INSTANCE_MAX_STORAGE_IOPS {
+		return true, nil
+	}
+
+	log.Errorf(
+		"Provided storage iops: '%d' is invalid!",
+		c.configuration.Items.Upgrade.StorageIOPS,
+	)
+
+	return false, nil
+}
+
+func (c *Controller) IsValidStorageThroughput() (bool, error) {
+	// If empty, the storage throughput will be set to the ebs volume base value.
+	if c.configuration.Items.Upgrade.StorageThroughput >= 0 &&
+		c.configuration.Items.Upgrade.StorageThroughput <= DB_INSTANCE_MAX_STORAGE_THROUGHTPUT {
+		return true, nil
+	}
+
+	log.Errorf(
+		"Provided storage throughtput: '%d' is invalid!",
+		c.configuration.Items.Upgrade.StorageThroughput,
+	)
+
+	return false, nil
 }
 
 func (c *Controller) StopSrcDBInstance(instance *rdsTypes.DBInstance) error {

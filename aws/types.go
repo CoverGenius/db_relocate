@@ -33,10 +33,10 @@ type targetDBConfiguration struct {
 }
 
 const (
-	GP3_STORAGE_TYPE             string = "gp3"
-	GP3_STORAGE_SIZE_THRESHOLD   int32  = 400 // GB
-	GP3_THROUGHPUT_LOW_WATERMARK int32  = 500
-	GP3_IOPS_LOW_WATERMARK       int32  = 12000
+	GP3_STORAGE_TYPE                     string = "gp3"
+	GP3_STORAGE_SIZE_THRESHOLD           int32  = 400 // GB
+	GP3_STORAGE_THROUGHPUT_LOW_WATERMARK int32  = 500
+	GP3_STORAGE_IOPS_LOW_WATERMARK       int32  = 12000
 )
 
 func (tdbc *targetDBConfiguration) setDBInstanceIdentifier(itemsConfiguration *types.Items, instance *rdsTypes.DBInstance) {
@@ -97,7 +97,35 @@ func (tdbc *targetDBConfiguration) setStorageSize(upgradeConfiguration *types.Up
 
 		tdbc.storageSize = &snapshot.AllocatedStorage
 	} else {
-		tdbc.storageSize = a.Int32(int32(upgradeConfiguration.StorageSize))
+		tdbc.storageSize = a.Int32(upgradeConfiguration.StorageSize)
+	}
+}
+
+func (tdbc *targetDBConfiguration) setStorageIOPS(upgradeConfiguration *types.UpgradeDetails) {
+	if *tdbc.storageType == GP3_STORAGE_TYPE {
+		if *tdbc.storageSize < GP3_STORAGE_SIZE_THRESHOLD {
+			tdbc.iops = nil
+		} else {
+			if upgradeConfiguration.StorageIOPS == 0 || upgradeConfiguration.StorageIOPS < GP3_STORAGE_IOPS_LOW_WATERMARK {
+				tdbc.iops = a.Int32(GP3_STORAGE_IOPS_LOW_WATERMARK)
+				return
+			}
+			tdbc.iops = a.Int32(upgradeConfiguration.StorageIOPS)
+		}
+	}
+}
+
+func (tdbc *targetDBConfiguration) setStorageThroughput(upgradeConfiguration *types.UpgradeDetails) {
+	if *tdbc.storageType == GP3_STORAGE_TYPE {
+		if *tdbc.storageSize < GP3_STORAGE_SIZE_THRESHOLD {
+			tdbc.storageThroughput = nil
+		} else {
+			if upgradeConfiguration.StorageThroughput == 0 || upgradeConfiguration.StorageIOPS < GP3_STORAGE_THROUGHPUT_LOW_WATERMARK {
+				tdbc.storageThroughput = a.Int32(GP3_STORAGE_THROUGHPUT_LOW_WATERMARK)
+				return
+			}
+			tdbc.storageThroughput = a.Int32(upgradeConfiguration.StorageThroughput)
+		}
 	}
 }
 
@@ -107,15 +135,5 @@ func (tdbc *targetDBConfiguration) setStorageType(upgradeConfiguration *types.Up
 		tdbc.storageType = snapshot.StorageType
 	} else {
 		tdbc.storageType = &upgradeConfiguration.StorageType
-	}
-
-	if *tdbc.storageType == GP3_STORAGE_TYPE {
-		if *tdbc.storageSize < GP3_STORAGE_SIZE_THRESHOLD {
-			tdbc.iops = nil
-			tdbc.storageThroughput = nil
-		} else {
-			tdbc.iops = a.Int32(GP3_IOPS_LOW_WATERMARK)
-			tdbc.storageThroughput = a.Int32(GP3_THROUGHPUT_LOW_WATERMARK)
-		}
 	}
 }
